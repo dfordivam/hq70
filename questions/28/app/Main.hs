@@ -22,7 +22,7 @@ numOfStudents :: StudentCount
 numOfStudents = 150
 
 computeAnswer :: (Area, StudentCount)
-computeAnswer = selectedIndices
+computeAnswer = answer
  where
   -- Take ratios,
   ratios :: V.Vector Double
@@ -31,28 +31,34 @@ computeAnswer = selectedIndices
   ratiosWithIndex :: V.Vector (Int, Double)
   ratiosWithIndex = V.indexed ratios
 
-  -- sort on ratios,
-  -- get index of vector
+  -- sort on ratios, The biggest (Area/StudentCount) comes first
+  -- This returns the index of vector
   sorted :: [Int]
   sorted = map (\(i,_) -> i) $ reverse $ sortBy mySort (V.toList ratiosWithIndex)
     where mySort a1@(_,x1) a2@(_,x2) = compare x1 x2
 
-  -- select best
+  -- get the studentcount and list of indices for all the cumulative indices
+  cumStudents :: [(StudentCount, [Int])]
+  cumStudents = map (\x -> (snd (addAll x),x)) $ cumIndex
+
+  -- take the entry which is just less than 150, 
+  -- and get its total (area, studentcount) 
+  answer = addAll $ snd $ last $ takeWhile (\(x,idx) -> x < numOfStudents) cumStudents
+
+  -- Some useful code
+  --
+  -- Add the area and student count for the given list of indices
+  addAll :: [Int] -> (Area, StudentCount)
+  addAll idx = foldl (\(a1, s1) i -> (a1 + (fst (tableData V.! i)), s1 + (snd (tableData V.! i)))) (0, 0) idx
+
+  -- Cumulative indices
+  -- Create a list of all the cumulative indices
   cumIndex :: [[Int]]
   cumIndex = loop (length sorted)
     where
       loop :: Int -> [[Int]]
       loop 0 = []
       loop n = loop (n-1) ++ [(take n sorted)]
-
-  -- cumulative students
-  cumStudents :: [(StudentCount, [Int])]
-  cumStudents = map (\x -> (snd (addAll x),x)) $ cumIndex
-
-  addAll :: [Int] -> (Area, StudentCount)
-  addAll idx = foldl (\(a1, s1) i -> (a1 + (fst (tableData V.! i)), s1 + (snd (tableData V.! i)))) (0, 0) idx
-
-  selectedIndices = addAll $ snd $ last $ takeWhile (\(x,idx) -> x < numOfStudents) cumStudents
 
 main = do
   let 答え = computeAnswer
